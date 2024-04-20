@@ -18,6 +18,12 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+.chat-history {
+  max-height: 300px;
+  overflow-y: auto;
+  word-wrap: break-word;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -39,4 +45,19 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  #root {
+    padding: 1rem; /* Reduce padding for smaller screens */
+  }
+
+  .logo {
+    height: 4em; /* Reduce logo size for smaller screens */
+  }
+
+  .card {
+    padding: 1em; /* Reduce card padding for smaller screens */
+  }
 }

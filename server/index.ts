@@ -48,9 +48,11 @@ io.on("connection", (socket: Socket) => {
   socket.on("privateMessage", ({ to, message }) => {
     if (to != "" && clients[to]) {
       console.log(`Sending private message to ${clients[to]}`);
+      const time = new Date().toLocaleString(); // Get current time in a standard format
       io.to(to).emit("privateMessageSend", {
         from: socket.id,
         message,
+        time,
       });
     }
   });
