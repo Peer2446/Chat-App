@@ -14,20 +14,18 @@ const io = new Server(server, {
 app.use(cors());
 
 const port = 3001;
-
 let clients: { [id: string]: string } = {}; // Map of client sockets to usernames
 let groups: { [name: string]: string[] } = {}; // Map of group names to arrays of client IDs
 
 // Handle client connection
 io.on("connection", (socket: Socket) => {
   console.log("A user connected", socket.id);
-
+  io.emit("clientList", clients);
   // Handle setting the user's name
   socket.on("setName", (name: string) => {
     clients[socket.id] = name;
-    // Notify all clients about the updated list
-    io.emit("clientList", clients);
-    console.log(clients);
+    // Notify all clients about the updated list (except the sender)
+    socket.broadcast.emit("clientList", clients);
   });
 
   // Handle creating a group
@@ -48,10 +46,10 @@ io.on("connection", (socket: Socket) => {
 
   // Handle private messages
   socket.on("privateMessage", ({ to, message }) => {
-    const targetSocket = Object.keys(clients).find((id) => clients[id] === to);
-    if (targetSocket) {
-      io.to(targetSocket).emit("privateMessage", {
-        from: clients[socket.id],
+    if (to != "" && clients[to]) {
+      console.log(`Sending private message to ${clients[to]}`);
+      io.to(to).emit("privateMessageSend", {
+        from: socket.id,
         message,
       });
     }
