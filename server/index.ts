@@ -20,7 +20,10 @@ let groups: { [name: string]: string[] } = {}; // Map of group names to arrays o
 // Handle client connection
 io.on("connection", (socket: Socket) => {
   console.log("A user connected", socket.id);
+
   io.emit("clientList", clients);
+  io.emit("groupList", groups);
+
   // Handle setting the user's name
   socket.on("setName", (name: string) => {
     clients[socket.id] = name;
@@ -29,16 +32,25 @@ io.on("connection", (socket: Socket) => {
   });
 
   // Handle creating a group
-  socket.on("createGroup", (groupName: string) => {
-    groups[groupName] = [];
+  socket.on("createGroup", (groupName: string, id: string) => {
+    groups[groupName] = [id];
     // Notify all clients about the new group
-    io.emit("groupList", Object.keys(groups));
+    io.emit("groupList", groups);
+  });
+
+  //Handle deleting a group
+  socket.on("deleteGroup", (groupName: string) => {
+    delete groups[groupName];
+    // Notify all clients about the updated list
+    io.emit("groupList", groups);
   });
 
   // Handle joining a group
   socket.on("joinGroup", (groupName: string) => {
     if (groups[groupName]) {
-      groups[groupName].push(socket.id);
+      if (!groups[groupName].includes(socket.id)) {
+        groups[groupName].push(socket.id);
+      }
       socket.join(groupName);
       console.log(`${clients[socket.id]} joined group ${groupName}`);
     }
@@ -59,17 +71,30 @@ io.on("connection", (socket: Socket) => {
 
   // Handle group messages
   socket.on("groupMessage", ({ groupName, message }) => {
-    io.to(groupName).emit("groupMessage", {
-      from: clients[socket.id],
-      message,
-    });
+    if (groups[groupName]) {
+      console.log(`Sending group message to ${groupName}`);
+      console.log(groups[groupName]);
+      const time = new Date().toLocaleString(); // Get current time in a standard format
+      groups[groupName].forEach((id) => {
+        if (id === socket.id) return; // Don't send the message to the sender (they already have it)
+        io.to(id).emit("groupMessageSend", {
+          from: socket.id,
+          message,
+          time,
+        });
+      });
+    }
   });
 
   // Handle disconnection
   socket.on("disconnect", () => {
     console.log("User disconnected", socket.id);
     delete clients[socket.id];
-    // Notify all clients about the updated list
+
+    Object.keys(groups).forEach((groupName) => {
+      groups[groupName] = groups[groupName].filter((id) => id !== socket.id);
+    });
+
     io.emit("clientList", Object.values(clients));
   });
 });
