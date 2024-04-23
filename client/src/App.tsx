@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+
 const socket = io("http://localhost:3001");
 
 function App() {
@@ -185,10 +186,32 @@ function App() {
           {isDarkMode ? " Dark Theme" : " Light Theme"}
         </button>
       </div>
-
+       <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
+        <div className="-ml-4 -mt-4 flex flex-wrap items-center justify-between sm:flex-nowrap">
+          <div className="ml-4 mt-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <img
+                  className="h-12 w-12 rounded-full"
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  alt=""
+                />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-base font-semibold leading-6 text-gray-900">{userName}</h3>
+                <p className="text-sm text-gray-500">
+                  <a href="#">Welcome Back!!!</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>  
       <div className="container">
         <div className="left">
-          <h1>Set your username</h1>
+          <div className="border-b border-gray-200 p-2">
+            <h1 className="text-base font-semibold leading-6 text-gray-900">Create your account name</h1>
+          </div>
           <Input
             id="username"
             type="text"
@@ -197,7 +220,9 @@ function App() {
             onChange={(e) => setUserName(e.target.value)}
           />
           <Button onClick={() => handleSetName(userName)}>Set Name</Button>
-          <h1>Connected Users</h1>
+          <div className="border-b border-gray-200 p-2">
+            <h3 className="text-base font-semibold leading-6 text-gray-900">Available Friends</h3>
+          </div>
           <div className="flex flex-col">
             {Object.keys(clients).map((id) =>
               id !== socket.id ? (
@@ -206,43 +231,55 @@ function App() {
                     className={`text-xl font-semibold ${
                       recieverId === id ? "text-red-500" : ""
                     }`}
-                  >
+                    >
                     {clients[id]}
                   </p>
                 </div>
               ) : null
             )}
           </div>
-        </div>
-        {recieverId !== "" && (
-          <ScrollArea className="w-1/2 h-1/2 border-8">
-            <div
-              id="chat-history"
-              className="overflow-y-auto overflow-x-hidden h-[300px]"
-              ref={privateChatHistoryRef}
-            ></div>
-            <div>
-              <Input
-                type="text"
-                id="input-box"
-                placeholder="Enter message"
-                value={privateMessage}
-                onChange={(e) => setPrivateMessage(e.target.value)}
-              />
-              <Button
-                disabled={privateMessage === ""}
-                onClick={() =>
-                  handleSendPrivateMessage(recieverId, privateMessage)
-                }
+          {recieverId !== "" && (
+            <ScrollArea className="h-1/10 border-8 overflow-y">
+              <div
+                id="chat-history"
+                className="overflow-y-auto overflow-x-hidden h-[300px]"
+                ref={privateChatHistoryRef}
               >
-                Send
-              </Button>
-            </div>
-          </ScrollArea>
-        )}
+              </div>
+              <div>
+                {/* <Input
+                  type="text"
+                  id="input-box"
+                  placeholder="Enter message"
+                  value={privateMessage}
+                  onChange={(e) => setPrivateMessage(e.target.value)}
+                /> */}
+                 <textarea
+                  rows={3}
+                  type="text"
+                  id="input-box"
+                  placeholder=" Enter message"
+                  value={privateMessage}
+                  onChange={(e) => setPrivateMessage(e.target.value)}
+                  className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
+                />
+                <Button
+                  disabled={privateMessage === ""}
+                  onClick={() =>
+                    handleSendPrivateMessage(recieverId, privateMessage)
+                  }
+                >
+                  Send
+                </Button>
+              </div>
+            </ScrollArea>
+          )}
+        </div>
         <div className="divider"></div>
         <div className="right">
-          <h1>Group Chat</h1>
+          <div className="border-b border-gray-200 p-2">
+            <h1 className="text-base font-semibold leading-6 text-gray-900">Group Chat</h1>
+          </div>
           <Input
             type="text"
             placeholder="Enter group name"
@@ -255,6 +292,9 @@ function App() {
           >
             Create Group
           </Button>
+          <div className="border-b border-gray-200 p-2">
+            <h3 className="text-base font-semibold leading-6 text-gray-900">Available Groups</h3>
+          </div>
           <div className="flex flex-col">
             {Object.keys(groups).map((name) => (
               <div key={name}>
@@ -273,21 +313,31 @@ function App() {
                 </Button>
               </div>
             ))}
+            
           </div>
           {currentGroup !== "" && (
-            <ScrollArea className="w-1/2 h-1/2 border-8">
+            <ScrollArea className="h-1/2 border-8">
               <div
                 id="chat-history"
                 className="overflow-y-auto overflow-x-hidden h-[300px]"
                 ref={groupChatHistoryRef}
               ></div>
               <div>
-                <Input
+                {/* <Input
                   type="text"
                   id="input-box"
                   placeholder="Enter message"
                   value={groupMessage}
                   onChange={(e) => setGroupMessage(e.target.value)}
+                /> */}
+                <textarea
+                  rows={4}
+                  type="text"
+                  id="input-box"
+                  placeholder=" Enter message"
+                  value={groupMessage}
+                  onChange={(e) => setPrivateMessage(e.target.value)}
+                  className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
                 />
                 <Button
                   disabled={groupMessage === ""}
