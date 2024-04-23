@@ -64,6 +64,23 @@
       --input: 217.2 32.6% 17.5%;
       --ring: 212.7 26.8% 83.9%;
     }
+    .container {
+      display: flex;
+      height: 100vh; /* Set container height to viewport height */
+    }
+    .left,
+    .right {
+      /* flex: 1; */
+       /* Make left and right sections grow to fill remaining space */
+      /* flex-direction: row; */
+      /* background-color: #f0f0f0; */
+    }
+    
+    .divider {
+      width: 2px; /* Width of the divider */
+      background-color: #ccc;
+      margin: 0 10px; /* Adjust margin as needed */
+    }
   }
 
   @layer base {
