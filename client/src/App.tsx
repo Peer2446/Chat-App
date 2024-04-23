@@ -198,8 +198,8 @@ function App() {
                 />
               </div>
               <div className="ml-4">
-                <h3 className="text-base font-semibold leading-6 text-gray-900">{userName}</h3>
-                <p className="text-sm text-gray-500">
+                <h1 className="text-xl font-bold leading-6">{userName}</h1>
+                <p className="text-sm">
                   <a href="#">Welcome Back!!!</a>
                 </p>
               </div>
@@ -210,7 +210,7 @@ function App() {
       <div className="container">
         <div className="left">
           <div className="border-b border-gray-200 p-2">
-            <h1 className="text-base font-semibold leading-6 text-gray-900">Create your account name</h1>
+            <h1 className="text-base font-semibold leading-6">Create your account name</h1>
           </div>
           <Input
             id="username"
@@ -221,7 +221,7 @@ function App() {
           />
           <Button onClick={() => handleSetName(userName)}>Set Name</Button>
           <div className="border-b border-gray-200 p-2">
-            <h3 className="text-base font-semibold leading-6 text-gray-900">Available Friends</h3>
+            <h3 className="text-base font-semibold leading-6">Available Friends</h3>
           </div>
           <div className="flex flex-col">
             {Object.keys(clients).map((id) =>
@@ -247,13 +247,13 @@ function App() {
               >
               </div>
               <div>
-                {/* <Input
+               {/* <Input
                   type="text"
                   id="input-box"
                   placeholder="Enter message"
                   value={privateMessage}
                   onChange={(e) => setPrivateMessage(e.target.value)}
-                /> */}
+                />  */}
                  <textarea
                   rows={3}
                   type="text"
@@ -261,7 +261,7 @@ function App() {
                   placeholder=" Enter message"
                   value={privateMessage}
                   onChange={(e) => setPrivateMessage(e.target.value)}
-                  className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
+                  className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
                 />
                 <Button
                   disabled={privateMessage === ""}
@@ -316,7 +316,7 @@ function App() {
             
           </div>
           {currentGroup !== "" && (
-            <ScrollArea className="h-1/2 border-8">
+            <ScrollArea className="h-1/10 border-8 overflow-y">
               <div
                 id="chat-history"
                 className="overflow-y-auto overflow-x-hidden h-[300px]"
@@ -331,13 +331,13 @@ function App() {
                   onChange={(e) => setGroupMessage(e.target.value)}
                 /> */}
                 <textarea
-                  rows={4}
+                  rows={3}
                   type="text"
                   id="input-box"
                   placeholder=" Enter message"
                   value={groupMessage}
-                  onChange={(e) => setPrivateMessage(e.target.value)}
-                  className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
+                  onChange={(e) => setGroupMessage(e.target.value)}
+                  className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
                 />
                 <Button
                   disabled={groupMessage === ""}
