@@ -77,8 +77,10 @@ io.on("connection", (socket: Socket) => {
       const time = new Date().toLocaleString(); // Get current time in a standard format
       groups[groupName].forEach((id) => {
         if (id === socket.id) return; // Don't send the message to the sender (they already have it)
+        const senderUsername = clients[socket.id]; // Get sender's username
         io.to(id).emit("groupMessageSend", {
           from: socket.id,
+          senderUsername, // Include sender's username in the payload
           message,
           time,
         });
