@@ -1,9 +1,15 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { TypingIndicator } from "@/components/ui/typing-Indicator";
+import { render } from "react-dom";
+import { ChatMessage } from "@/components/ui/chatMessageBox";
 
 const socket = io("http://localhost:3001");
 
@@ -16,9 +22,15 @@ function App() {
   const [groups, setGroups] = useState<{ [name: string]: string[] }>({});
   const [groupMessage, setGroupMessage] = useState("");
   const [currentGroup, setCurrentGroup] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState(false); // New state for dark mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const privateChatHistoryRef = useRef<HTMLDivElement>(null);
   const groupChatHistoryRef = useRef<HTMLDivElement>(null);
+  const [isNameSet, setIsNameSet] = useState(false);
+  const [isTyping, setIsTyping] = useState({ private: false, group: false });
+  const [isTypingPrivate, setIsTypingPrivate] = useState(false);
+  const [isTypingGroup, setIsTypingGroup] = useState(false);
+  const [userTypingGroup, setUserTypingGroup] = useState("");
+  const { toast } = useToast();
 
   useEffect(() => {
     socket.on("clientList", (clients: { [id: string]: string }) => {
@@ -30,16 +42,27 @@ function App() {
   }, []);
 
   useEffect(() => {
+    console.log(clients);
+  }, [clients]);
+
+  useEffect(() => {
     socket.on(
       "privateMessageSend",
       (data: { from: string; message: string; time: string }) => {
         if (recieverId === data.from) {
           var newDiv = document.createElement("div");
-          const time = new Date(data.time).toLocaleTimeString(); // Parse time
-          newDiv.innerHTML = `<p>${clients[data.from]} (${time}): ${
-            data.message
-          }</p>`;
-          privateChatHistoryRef.current?.appendChild(newDiv); // Append new message to chat history
+          const time = new Date(data.time).toLocaleTimeString();
+          render(
+            <ChatMessage
+              username={clients[data.from]}
+              message={data.message}
+              time={time}
+              isSender={false}
+            />,
+            newDiv
+          );
+
+          privateChatHistoryRef.current?.appendChild(newDiv);
         }
       }
     );
@@ -53,12 +76,17 @@ function App() {
       "groupMessageSend",
       (data: { from: string; message: string; time: string }) => {
         var newDiv = document.createElement("div");
-        const time = new Date(data.time).toLocaleTimeString(); // Parse time
-        newDiv.innerHTML = `<p>${clients[data.from]} (${time}): ${
-          data.message
-        }</p>`;
-        groupChatHistoryRef.current?.appendChild(newDiv); // Append new message to chat history
-        console.log(data);
+        const time = new Date(data.time).toLocaleTimeString();
+        render(
+          <ChatMessage
+            username={clients[data.from]}
+            message={data.message}
+            time={time}
+            isSender={false}
+          />,
+          newDiv
+        );
+        groupChatHistoryRef.current?.appendChild(newDiv);
       }
     );
     return () => {
@@ -66,20 +94,78 @@ function App() {
     };
   }, [currentGroup]);
 
+  useEffect(() => {
+    console.log(isTypingGroup, isTypingPrivate);
+  }, [isTypingGroup, isTypingPrivate]);
+  useEffect(() => {
+    let typingTimeout: NodeJS.Timeout;
+
+    const handleTyping = (send_id: string, receive_id: string) => {
+      if (send_id === socket.id) return;
+      if (groups[receive_id]) {
+        setUserTypingGroup(clients[send_id]);
+        setIsTypingGroup(true);
+      } else {
+        setUserTypingGroup("");
+        setIsTypingPrivate(true);
+      }
+
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        setIsTypingPrivate(false);
+        setIsTypingGroup(false);
+        setIsTyping({ private: false, group: false });
+        setUserTypingGroup("");
+      }, 1000);
+    };
+
+    if (isTyping.private) {
+      socket.emit("typing", { senderId: socket.id, receiverId: recieverId });
+    }
+    if (isTyping.group) {
+      socket.emit("typing", { senderId: socket.id, groupName: currentGroup });
+    }
+
+    socket.on("typingsend", handleTyping);
+
+    return () => {
+      socket.off("typingsend", handleTyping);
+      clearTimeout(typingTimeout);
+    };
+  }, [clients, groups, isTyping]);
+
   const handleSetName = (username: string) => {
     if (!Object.values(clients).includes(username)) {
       socket.emit("setName", username);
       document.getElementById("username")?.setAttribute("disabled", "true");
+      setIsNameSet(true);
+    } else {
+      toast({
+        title: "This name is already taken",
+        description: "Please choose another name",
+      });
     }
   };
 
   const handleSetGroupName = (groupName: string) => {
     if (!Object.keys(groups).includes(groupName)) {
       socket.emit("createGroup", groupName, socket.id);
+    } else {
+      toast({
+        title: "This group name is already taken",
+        description: "Please choose another group name",
+      });
     }
   };
 
   const handleJoinGroup = (groupName: string) => {
+    if (!isNameSet) {
+      toast({
+        title: "Please set your name first",
+        description: "Enter your name in the input box",
+      });
+      return;
+    }
     socket.emit("joinGroup", groupName);
     if (groupChatHistoryRef.current) {
       groupChatHistoryRef.current.innerHTML = "";
@@ -88,6 +174,13 @@ function App() {
   };
 
   const handleJoinPrivateChat = (id: string) => {
+    if (!isNameSet) {
+      toast({
+        title: "Please set your name first",
+        description: "Enter your name in the input box",
+      });
+      return;
+    }
     setRecieverId(id);
     if (privateChatHistoryRef.current) {
       privateChatHistoryRef.current.innerHTML = "";
@@ -98,8 +191,16 @@ function App() {
     socket.emit("privateMessage", { to: receiverId, message });
 
     var newDiv = document.createElement("div");
-    const time = new Date().toLocaleTimeString(); // Get current time
-    newDiv.innerHTML = `<p class="text-right">Me (${time}): ${message}</p>`;
+    const time = new Date().toLocaleTimeString();
+    render(
+      <ChatMessage
+        username="Me"
+        message={message}
+        time={time}
+        isSender={true}
+      />,
+      newDiv
+    );
     privateChatHistoryRef.current?.appendChild(newDiv);
 
     setPrivateMessage("");
@@ -109,8 +210,16 @@ function App() {
     socket.emit("groupMessage", { groupName, message });
 
     var newDiv = document.createElement("div");
-    const time = new Date().toLocaleTimeString(); // Get current time
-    newDiv.innerHTML = `<p class="text-right">Me (${time}): ${message}</p>`;
+    const time = new Date().toLocaleTimeString();
+    render(
+      <ChatMessage
+        username="Me"
+        message={message}
+        time={time}
+        isSender={true}
+      />,
+      newDiv
+    );
     groupChatHistoryRef.current?.appendChild(newDiv);
 
     setGroupMessage("");
@@ -186,7 +295,7 @@ function App() {
           {isDarkMode ? " Dark Theme" : " Light Theme"}
         </button>
       </div>
-       <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
+      <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
         <div className="-ml-4 -mt-4 flex flex-wrap items-center justify-between sm:flex-nowrap">
           <div className="ml-4 mt-4">
             <div className="flex items-center">
@@ -206,11 +315,13 @@ function App() {
             </div>
           </div>
         </div>
-      </div>  
+      </div>
       <div className="container">
         <div className="left">
           <div className="border-b border-gray-200 p-2">
-            <h1 className="text-base font-semibold leading-6">Create your account name</h1>
+            <h1 className="text-xl font-bold leading-6">
+              Create your account name
+            </h1>
           </div>
           <Input
             id="username"
@@ -219,19 +330,29 @@ function App() {
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
           />
-          <Button onClick={() => handleSetName(userName)}>Set Name</Button>
+          <Button
+            className="my-2"
+            disabled={userName === ""}
+            onClick={() => handleSetName(userName)}
+          >
+            Set Name
+          </Button>
           <div className="border-b border-gray-200 p-2">
-            <h3 className="text-base font-semibold leading-6">Available Friends</h3>
+            <h3 className="text-xl font-bold leading-6">Available Friends</h3>
           </div>
           <div className="flex flex-col">
             {Object.keys(clients).map((id) =>
               id !== socket.id ? (
-                <div key={id} onClick={() => handleJoinPrivateChat(id)}>
+                <div
+                  className="mx-3"
+                  key={id}
+                  onClick={() => handleJoinPrivateChat(id)}
+                >
                   <p
-                    className={`text-xl font-semibold ${
-                      recieverId === id ? "text-red-500" : ""
+                    className={`text-xl ${
+                      recieverId === id ? "font-bold" : "font-semibold"
                     }`}
-                    >
+                  >
                     {clients[id]}
                   </p>
                 </div>
@@ -244,26 +365,24 @@ function App() {
                 id="chat-history"
                 className="overflow-y-auto overflow-x-hidden h-[300px]"
                 ref={privateChatHistoryRef}
-              >
+              ></div>
+              <div className="typing-indicator flex justify-start my-4 h-6">
+                <TypingIndicator isVisible={isTypingPrivate} />
               </div>
               <div>
-               {/* <Input
-                  type="text"
-                  id="input-box"
-                  placeholder="Enter message"
-                  value={privateMessage}
-                  onChange={(e) => setPrivateMessage(e.target.value)}
-                />  */}
-                 <textarea
-                  rows={3}
-                  type="text"
+                <textarea
+                  rows={1}
                   id="input-box"
                   placeholder=" Enter message"
                   value={privateMessage}
-                  onChange={(e) => setPrivateMessage(e.target.value)}
+                  onChange={(e) => {
+                    setIsTyping({ private: true, group: false });
+                    setPrivateMessage(e.target.value);
+                  }}
                   className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
                 />
                 <Button
+                  className="my-2"
                   disabled={privateMessage === ""}
                   onClick={() =>
                     handleSendPrivateMessage(recieverId, privateMessage)
@@ -278,68 +397,79 @@ function App() {
         <div className="divider"></div>
         <div className="right">
           <div className="border-b border-gray-200 p-2">
-            <h1 className="text-base font-semibold leading-6 text-gray-900">Group Chat</h1>
+            <h1 className="text-xl font-bold leading-6 text-gray-900">
+              Group Chat
+            </h1>
           </div>
           <Input
             type="text"
-            placeholder="Enter group name"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
           />
           <Button
+            className="my-2"
             disabled={groupName === ""}
             onClick={() => handleSetGroupName(groupName)}
           >
             Create Group
           </Button>
           <div className="border-b border-gray-200 p-2">
-            <h3 className="text-base font-semibold leading-6 text-gray-900">Available Groups</h3>
+            <h3 className="text-xl font-bold leading-6 text-gray-900">
+              Available Groups
+            </h3>
           </div>
           <div className="flex flex-col">
             {Object.keys(groups).map((name) => (
-              <div key={name}>
+              <div className="mx-3" key={name}>
                 <p
-                  className={`text-xl font-semibold ${
-                    currentGroup == name ? "text-red-500" : ""
+                  className={`text-xl ${
+                    currentGroup == name ? "font-bold" : "font-semibold"
                   }`}
                 >
                   {name}
                 </p>
-                <Button onClick={() => socket.emit("deleteGroup", name)}>
+                <Button
+                  className="my-2"
+                  onClick={() => {
+                    socket.emit("deleteGroup", name);
+                    if (currentGroup === name) {
+                      setCurrentGroup("");
+                    }
+                  }}
+                >
                   Delete Group
                 </Button>
-                <Button onClick={() => handleJoinGroup(name)}>
+                <Button className="m-2" onClick={() => handleJoinGroup(name)}>
                   Join Group
                 </Button>
               </div>
             ))}
-            
           </div>
-          {currentGroup !== "" && (
+          {currentGroup !== "" && groups && (
             <ScrollArea className="h-1/10 border-8 overflow-y">
               <div
                 id="chat-history"
                 className="overflow-y-auto overflow-x-hidden h-[300px]"
                 ref={groupChatHistoryRef}
               ></div>
+              <div className="typing-indicator flex flex-col justify-start items-start my-4 h-6">
+                <p className="word-wrap: break-word">{userTypingGroup}</p>
+                <TypingIndicator isVisible={isTypingGroup} />
+              </div>
               <div>
-                {/* <Input
-                  type="text"
-                  id="input-box"
-                  placeholder="Enter message"
-                  value={groupMessage}
-                  onChange={(e) => setGroupMessage(e.target.value)}
-                /> */}
                 <textarea
-                  rows={3}
-                  type="text"
+                  rows={1}
                   id="input-box"
                   placeholder=" Enter message"
                   value={groupMessage}
-                  onChange={(e) => setGroupMessage(e.target.value)}
+                  onChange={(e) => {
+                    setIsTyping({ private: false, group: true });
+                    setGroupMessage(e.target.value);
+                  }}
                   className="block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-60"
                 />
                 <Button
+                  className="my-2"
                   disabled={groupMessage === ""}
                   onClick={() =>
                     handleSendGroupMessage(currentGroup, groupMessage)
@@ -351,6 +481,7 @@ function App() {
             </ScrollArea>
           )}
         </div>
+        <Toaster />
       </div>
     </>
   );

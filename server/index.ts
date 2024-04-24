@@ -43,6 +43,7 @@ io.on("connection", (socket: Socket) => {
     delete groups[groupName];
     // Notify all clients about the updated list
     io.emit("groupList", groups);
+    console.log(groups);
   });
 
   // Handle joining a group
@@ -98,6 +99,21 @@ io.on("connection", (socket: Socket) => {
     });
 
     io.emit("clientList", Object.values(clients));
+  });
+
+  socket.on("typing", ({ senderId, receiverId, groupName }) => {
+    console.log("Typing event received", senderId, receiverId, groupName);
+    if (receiverId) {
+      // If it's a private message, emit 'typingsend' event to the receiver
+      io.to(receiverId).emit("typingsend", senderId, receiverId);
+    } else if (groupName) {
+      // If it's a group message, emit 'typingsend' event to all members in the group
+      groups[groupName].forEach((id) => {
+        if (id !== senderId) {
+          io.to(id).emit("typingsend", senderId, groupName);
+        }
+      });
+    }
   });
 });
 
