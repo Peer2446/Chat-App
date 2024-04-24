@@ -237,9 +237,8 @@ function App() {
   return (
     <>
       <div
-        className={`flex justify-end p-4 ${
-          isDarkMode ? "bg-blue-500" : "bg-yellow-500"
-        }`}
+        className={`flex justify-end p-4 ${isDarkMode ? "bg-blue-500" : "bg-yellow-500"
+          }`}
       >
         <button
           className="text-gray-800 font-bold rounded inline-flex items-center"
@@ -349,9 +348,8 @@ function App() {
                   onClick={() => handleJoinPrivateChat(id)}
                 >
                   <p
-                    className={`text-xl ${
-                      recieverId === id ? "font-bold" : "font-semibold"
-                    }`}
+                    className={`text-xl ${recieverId === id ? "font-bold" : "font-semibold"
+                      }`}
                   >
                     {clients[id]}
                   </p>
@@ -397,7 +395,7 @@ function App() {
         <div className="divider"></div>
         <div className="right">
           <div className="border-b border-gray-200 p-2">
-            <h1 className="text-xl font-bold leading-6 text-gray-900">
+            <h1 className="text-xl font-bold leading-6">
               Group Chat
             </h1>
           </div>
@@ -414,7 +412,7 @@ function App() {
             Create Group
           </Button>
           <div className="border-b border-gray-200 p-2">
-            <h3 className="text-xl font-bold leading-6 text-gray-900">
+            <h3 className="text-xl font-bold leading-6">
               Available Groups
             </h3>
           </div>
@@ -422,9 +420,8 @@ function App() {
             {Object.keys(groups).map((name) => (
               <div className="mx-3" key={name}>
                 <p
-                  className={`text-xl ${
-                    currentGroup == name ? "font-bold" : "font-semibold"
-                  }`}
+                  className={`text-xl ${currentGroup == name ? "font-bold" : "font-semibold"
+                    }`}
                 >
                   {name}
                 </p>
